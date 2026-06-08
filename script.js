@@ -234,6 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitBtn.disabled = false;
                 submitBtnText.innerText = 'Send Inquiry';
                 statusDiv.classList.add('success');
+                statusDiv.style.display = 'block';
                 statusDiv.innerHTML = `<strong>Inquiry Sent (Simulation Mode)!</strong><br>Thank you, your message has been processed successfully.<br><small style="color: var(--text-muted);">Developer tip: Set a real Web3Forms key in the HTML to receive direct emails.</small>`;
                 contactForm.reset();
             }, 1500);
@@ -259,11 +260,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (response.status === 200) {
                 statusDiv.classList.add('success');
+                statusDiv.style.display = 'block';
                 statusDiv.innerHTML = `<strong>Thank you!</strong> Your message has been sent successfully. I will get back to you shortly.`;
                 contactForm.reset();
             } else {
                 console.error(result);
                 statusDiv.classList.add('error');
+                statusDiv.style.display = 'block';
                 statusDiv.innerHTML = `<strong>Error:</strong> ${result.message || 'Something went wrong. Please try again.'}`;
             }
         } catch (error) {
@@ -271,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = false;
             submitBtnText.innerText = 'Send Inquiry';
             statusDiv.classList.add('error');
+            statusDiv.style.display = 'block';
             statusDiv.innerHTML = `<strong>Network Error:</strong> Failed to connect. Please check your internet connection or email directly.`;
         }
     });
