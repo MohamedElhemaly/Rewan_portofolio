@@ -12,7 +12,7 @@
 
     // SHA-256 hash of the password "rewan2024"
     const PASSWORD_HASH = '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8'; // placeholder, computed at runtime
-    const ACTUAL_PASSWORD = 'rewan2024'; // Simple check — for production use hashed comparison
+    const ACTUAL_PASSWORD = 'rewan2026'; // Simple check — for production use hashed comparison
     const SESSION_KEY = 'admin_session';
     const DATA_PREFIX = 'admin_';
     const IMG_PREFIX = 'img:';
