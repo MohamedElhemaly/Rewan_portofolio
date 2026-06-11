@@ -1,11 +1,329 @@
 /**
  * Rewan Hassan - Portfolio Interactivity Script
- * Contains: Theme toggling, mobile navigation, active section tracking,
+ * Contains: Admin data hydration, Theme toggling, mobile navigation, active section tracking,
  *           skills filtering, viewport-triggered skill bar animations, and form handling.
  */
 
+// --- Admin Panel Redirect ---
+// Supports: #/admin, #admin (works locally + deployed), and /admin (Vercel rewrite handles this)
+(function() {
+    const hash = window.location.hash;
+    if (hash === '#/admin' || hash === '#admin') {
+        window.location.replace('admin.html');
+    }
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
-    
+
+    // --- 0. Admin Data Hydration ---
+    // Reads saved data from localStorage (set by admin panel) and applies it to the DOM
+    (function hydrateFromAdmin() {
+        const DATA_PREFIX = 'admin_';
+        const IMG_PREFIX = 'img:';
+
+        function getData(section) {
+            try {
+                const raw = localStorage.getItem(DATA_PREFIX + section);
+                return raw ? JSON.parse(raw) : null;
+            } catch { return null; }
+        }
+
+        function getImage(path) {
+            return localStorage.getItem(IMG_PREFIX + path);
+        }
+
+        // --- SEO / Meta ---
+        const seoData = getData('seo');
+        if (seoData) {
+            if (seoData.pageTitle) document.title = seoData.pageTitle;
+            if (seoData.metaDescription) {
+                const meta = document.querySelector('meta[name="description"]');
+                if (meta) meta.setAttribute('content', seoData.metaDescription);
+            }
+            if (seoData.metaKeywords) {
+                const meta = document.querySelector('meta[name="keywords"]');
+                if (meta) meta.setAttribute('content', seoData.metaKeywords);
+            }
+            if (seoData.ogTitle) {
+                const meta = document.querySelector('meta[property="og:title"]');
+                if (meta) meta.setAttribute('content', seoData.ogTitle);
+                const tw = document.querySelector('meta[property="twitter:title"]');
+                if (tw) tw.setAttribute('content', seoData.ogTitle);
+            }
+            if (seoData.ogDescription) {
+                const meta = document.querySelector('meta[property="og:description"]');
+                if (meta) meta.setAttribute('content', seoData.ogDescription);
+                const tw = document.querySelector('meta[property="twitter:description"]');
+                if (tw) tw.setAttribute('content', seoData.ogDescription);
+            }
+        }
+
+        // --- Hero ---
+        const heroData = getData('hero');
+        if (heroData) {
+            const heroSection = document.getElementById('hero');
+            if (heroSection) {
+                if (heroData.badge) {
+                    const badge = heroSection.querySelector('.hero-tag');
+                    if (badge) badge.textContent = heroData.badge;
+                }
+                if (heroData.title) {
+                    const title = heroSection.querySelector('.hero-title');
+                    if (title) title.innerHTML = heroData.title;
+                }
+                if (heroData.headline) {
+                    const hl = heroSection.querySelector('.hero-headline');
+                    if (hl) hl.innerHTML = heroData.headline;
+                }
+                if (heroData.description) {
+                    const desc = heroSection.querySelector('.hero-description');
+                    if (desc) desc.innerHTML = heroData.description;
+                }
+                if (heroData.stat1Value || heroData.stat1Label) {
+                    const stats = heroSection.querySelectorAll('.stat-item');
+                    if (stats[0]) {
+                        if (heroData.stat1Value) stats[0].querySelector('.stat-num').textContent = heroData.stat1Value;
+                        if (heroData.stat1Label) stats[0].querySelector('.stat-label').textContent = heroData.stat1Label;
+                    }
+                }
+                if (heroData.stat2Value || heroData.stat2Label) {
+                    const stats = heroSection.querySelectorAll('.stat-item');
+                    if (stats[1]) {
+                        if (heroData.stat2Value) stats[1].querySelector('.stat-num').textContent = heroData.stat2Value;
+                        if (heroData.stat2Label) stats[1].querySelector('.stat-label').textContent = heroData.stat2Label;
+                    }
+                }
+                if (heroData.cvFileName) {
+                    document.querySelectorAll('a[download]').forEach(a => {
+                        a.setAttribute('href', heroData.cvFileName);
+                    });
+                }
+            }
+        }
+
+        // Hero image
+        const heroImg = getImage('assets/images/Rewan_photo.jpg');
+        if (heroImg) {
+            const img = document.querySelector('.hero-image');
+            if (img) img.src = heroImg;
+        }
+
+        // --- About ---
+        const aboutData = getData('about');
+        if (aboutData) {
+            const aboutSection = document.getElementById('about');
+            if (aboutSection) {
+                const paragraphs = aboutSection.querySelectorAll('.about-text p');
+                if (aboutData.leadParagraph && paragraphs[0]) paragraphs[0].textContent = aboutData.leadParagraph;
+                if (aboutData.paragraph2 && paragraphs[1]) paragraphs[1].textContent = aboutData.paragraph2;
+                if (aboutData.paragraph3 && paragraphs[2]) paragraphs[2].textContent = aboutData.paragraph3;
+
+                const featureCards = aboutSection.querySelectorAll('.about-feature-card');
+                if (featureCards[0]) {
+                    if (aboutData.feature1Title) featureCards[0].querySelector('h4').textContent = aboutData.feature1Title;
+                    if (aboutData.feature1Desc) featureCards[0].querySelector('p').textContent = aboutData.feature1Desc;
+                }
+                if (featureCards[1]) {
+                    if (aboutData.feature2Title) featureCards[1].querySelector('h4').textContent = aboutData.feature2Title;
+                    if (aboutData.feature2Desc) featureCards[1].querySelector('p').textContent = aboutData.feature2Desc;
+                }
+
+                const infoValues = aboutSection.querySelectorAll('.info-value');
+                if (aboutData.location && infoValues[0]) infoValues[0].textContent = aboutData.location;
+                if (aboutData.educationFocus && infoValues[1]) infoValues[1].textContent = aboutData.educationFocus;
+                if (aboutData.graduationYear && infoValues[2]) infoValues[2].textContent = aboutData.graduationYear;
+                if (aboutData.languages && infoValues[3]) infoValues[3].textContent = aboutData.languages;
+            }
+        }
+
+        // --- Experience ---
+        const expData = getData('experience');
+        if (expData && expData.entries) {
+            const timeline = document.querySelector('.experience-timeline');
+            if (timeline) {
+                timeline.innerHTML = '';
+                expData.entries.forEach(entry => {
+                    const item = document.createElement('div');
+                    item.className = 'experience-item';
+                    item.innerHTML = `
+                        <div class="experience-dot"></div>
+                        <div class="experience-card">
+                            <div class="experience-header">
+                                <div>
+                                    <h3 class="role-title">${entry.role}</h3>
+                                    <div class="company-meta">
+                                        <span class="company-name">${entry.company}</span>
+                                        <span class="badge">${entry.badge}</span>
+                                    </div>
+                                </div>
+                                <span class="experience-duration">${entry.duration}</span>
+                            </div>
+                            <div class="experience-body">
+                                <ul class="experience-bullets">
+                                    ${entry.bullets.map(b => `<li>${b}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="experience-skills">
+                                ${entry.skills.map(s => `<span class="badge badge-secondary">${s}</span>`).join('')}
+                            </div>
+                        </div>
+                    `;
+                    timeline.appendChild(item);
+                });
+            }
+        }
+
+        // --- Skills ---
+        const skillsData = getData('skills');
+        if (skillsData && skillsData.entries) {
+            const grid = document.getElementById('skills-grid');
+            if (grid) {
+                grid.innerHTML = '';
+                skillsData.entries.forEach(skill => {
+                    const categoryLabels = { business: 'Business', hr: 'HR', technical: 'Technical', soft: 'Soft Skills' };
+                    const card = document.createElement('div');
+                    card.className = 'skill-card';
+                    card.setAttribute('data-category', skill.category);
+                    card.innerHTML = `
+                        <div class="skill-info">
+                            <span class="skill-name">${skill.name}</span>
+                            <span class="skill-tag">${categoryLabels[skill.category] || skill.category}</span>
+                        </div>
+                        <div class="skill-progress-bg">
+                            <div class="skill-progress-bar" data-progress="${skill.progress}%"></div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // --- Certifications ---
+        const certData = getData('certifications');
+        if (certData && certData.entries) {
+            const grid = document.querySelector('.certifications-grid');
+            if (grid) {
+                grid.innerHTML = '';
+                const icons = [
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>',
+                    '<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>'
+                ];
+                certData.entries.forEach((cert, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'cert-card';
+                    card.innerHTML = `
+                        <div class="cert-icon">${icons[i % icons.length]}</div>
+                        <div class="cert-details">
+                            <h3 class="cert-title">${cert.title}</h3>
+                            <div class="cert-issuer">${cert.issuer}</div>
+                            <p class="cert-project-summary">
+                                <strong>Training Project:</strong> ${cert.summary}
+                            </p>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            }
+        }
+
+        // --- Education ---
+        const eduData = getData('education');
+        if (eduData) {
+            const eduSection = document.getElementById('education');
+            if (eduSection) {
+                if (eduData.institution) {
+                    const inst = eduSection.querySelector('.education-institution');
+                    if (inst) inst.textContent = eduData.institution;
+                }
+                if (eduData.degree) {
+                    const deg = eduSection.querySelector('.education-degree');
+                    if (deg) deg.innerHTML = eduData.degree;
+                }
+                if (eduData.faculty) {
+                    const fac = eduSection.querySelector('.education-details p');
+                    if (fac) fac.textContent = eduData.faculty;
+                }
+                if (eduData.graduationDate) {
+                    const gradItems = eduSection.querySelectorAll('.education-meta-item span');
+                    if (gradItems[0]) gradItems[0].textContent = eduData.graduationDate;
+                }
+                if (eduData.curriculum) {
+                    const gradItems = eduSection.querySelectorAll('.education-meta-item span');
+                    if (gradItems[1]) gradItems[1].textContent = eduData.curriculum;
+                }
+                if (eduData.grade) {
+                    const gradeBadge = eduSection.querySelector('.education-grade-badge');
+                    if (gradeBadge) {
+                        gradeBadge.innerHTML = `<span>Cumulative Grade</span>${eduData.grade}`;
+                    }
+                }
+            }
+        }
+
+        // --- Contact ---
+        const contactData = getData('contact');
+        if (contactData) {
+            const contactSection = document.getElementById('contact');
+            if (contactSection) {
+                if (contactData.introParagraph) {
+                    const p = contactSection.querySelector('.contact-info-panel > p');
+                    if (p) p.textContent = contactData.introParagraph;
+                }
+                if (contactData.email) {
+                    const emailCard = contactSection.querySelector('a[href^="mailto:"]');
+                    if (emailCard) {
+                        emailCard.setAttribute('href', `mailto:${contactData.email}`);
+                        const val = emailCard.querySelector('.contact-detail-value');
+                        if (val) val.textContent = contactData.email;
+                    }
+                }
+                if (contactData.phone) {
+                    const phoneCard = contactSection.querySelector('a[href^="tel:"]');
+                    if (phoneCard) {
+                        phoneCard.setAttribute('href', `tel:${contactData.phone.replace(/\s/g, '')}`);
+                        const val = phoneCard.querySelector('.contact-detail-value');
+                        if (val) val.textContent = contactData.phone;
+                    }
+                }
+                if (contactData.location) {
+                    const locationCards = contactSection.querySelectorAll('.contact-detail-card:not(a)');
+                    locationCards.forEach(card => {
+                        const label = card.querySelector('.contact-detail-label');
+                        if (label && label.textContent === 'Location') {
+                            const val = card.querySelector('.contact-detail-value');
+                            if (val) val.textContent = contactData.location;
+                        }
+                    });
+                }
+                if (contactData.linkedin) {
+                    const linkedinCard = contactSection.querySelector('a[href*="linkedin"]');
+                    if (linkedinCard) {
+                        linkedinCard.setAttribute('href', contactData.linkedin);
+                        const val = linkedinCard.querySelector('.contact-detail-value');
+                        if (val) val.textContent = contactData.linkedinDisplay || contactData.linkedin;
+                    }
+                }
+                if (contactData.web3formsKey) {
+                    const keyInput = document.querySelector('input[name="access_key"]');
+                    if (keyInput) keyInput.value = contactData.web3formsKey;
+                }
+            }
+        }
+
+        // --- Footer ---
+        const footerData = getData('footer');
+        if (footerData) {
+            const footer = document.querySelector('.footer-content p');
+            if (footer) {
+                const link = footer.querySelector('a');
+                if (link) {
+                    if (footerData.copyrightText) link.textContent = footerData.copyrightText;
+                    if (footerData.copyrightLink) link.setAttribute('href', footerData.copyrightLink);
+                }
+            }
+        }
+    })();
+
     // --- 1. Theme Configuration & Toggling ---
     const themeToggle = document.getElementById('theme-toggle');
     const storedTheme = localStorage.getItem('theme');
